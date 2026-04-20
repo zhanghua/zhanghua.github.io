@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>书法字帖临摹对比工具</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>书法字帖临摹对比工具</h1>
+        <p class="description">上传字帖和临摹作品，自动切割进行肩并肩对比</p>
+        
+        <div class="upload-section">
+            <div class="upload-box">
+                <h2>字帖（原作）</h2>
+                <input type="file" id="image1Input" accept="image/*">
+                <div class="preview-container">
+                    <img id="image1Preview" class="preview-image" alt="字帖预览">
+                    <canvas id="canvas1" class="canvas-editor"></canvas>
+                </div>
+                <div class="segment-options">
+                    <div class="option-row">
+                        <label>排列方向：</label>
+                        <select id="direction1">
+                            <option value="vertical" selected>竖排（传统书法）</option>
+                            <option value="horizontal">横排（练习纸）</option>
+                        </select>
+                    </div>
+                    <div class="option-row">
+                        <label>行/列数：</label>
+                        <input type="number" id="lineCount1" min="0" max="50" value="6" placeholder="0=自动">
+                        <span class="hint">0 = 自动检测</span>
+                    </div>
+                    <div class="option-row">
+                        <label>每行/列字数：</label>
+                        <input type="text" id="charsPerLine1" value="9,9,9,9,11,10" placeholder="如: 9 或 9,9,9,9,11,10">
+                        <span class="hint">0=自动 | 单数=统一 | 逗号分隔=每列</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="upload-box">
+                <h2>临摹作品</h2>
+                <input type="file" id="image2Input" accept="image/*">
+                <div class="preview-container">
+                    <img id="image2Preview" class="preview-image" alt="临摹作品预览">
+                    <canvas id="canvas2" class="canvas-editor"></canvas>
+                </div>
+                <div class="segment-options">
+                    <div class="option-row">
+                        <label>排列方向：</label>
+                        <select id="direction2">
+                            <option value="vertical" selected>竖排（传统书法）</option>
+                            <option value="horizontal">横排（练习纸）</option>
+                        </select>
+                    </div>
+                    <div class="option-row">
+                        <label>行/列数：</label>
+                        <input type="number" id="lineCount2" min="0" max="50" value="0" placeholder="0=同字帖">
+                        <span class="hint">0 = 同字帖设置</span>
+                    </div>
+                    <div class="option-row">
+                        <label>每行/列字数：</label>
+                        <input type="text" id="charsPerLine2" value="0" placeholder="0=同字帖">
+                        <span class="hint">0 = 同字帖设置</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="control-group">
+                    <label>对比模式：</label>
+                    <select id="compareMode">
+                        <option value="char" selected>单字对比</option>
+                        <option value="line">整列/行对比</option>
+                    </select>
+                </div>
+                <div class="control-group" id="matchModeGroup">
+                    <label>匹配模式：</label>
+                    <select id="matchMode">
+                        <option value="best">最佳匹配（从重复中选最佳）</option>
+                        <option value="sequential" selected>按顺序配对</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <button id="segmentBtn" disabled>自动切割对比</button>
+                <div class="control-group">
+                    <label>下载样式</label>
+                    <select id="downloadStyle">
+                        <option value="default">默认（含标注）</option>
+                        <option value="compact">简洁（纯图片）</option>
+                    </select>
+                </div>
+                <button id="downloadBtn" disabled>📥 下载对比图</button>
+                <button id="clearBtn">清空重来</button>
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div id="segmentationPreview" class="segmentation-preview" style="display:none;">
+                <h3 style="margin:0 0 8px 0; cursor:pointer;" onclick="this.parentElement.querySelector('.preview-body').classList.toggle('collapsed')">
+                    🔍 分割预览 <small style="color:#888">（点击折叠/展开）</small>
+                </h3>
+                <div class="preview-body">
+                    <p style="color:#666; font-size:0.85em; margin-bottom:8px; text-align:center;">
+                        🖱️ 拖拽调整：<span style="color:#00b43c">实线</span>=列边界/字切割线 &nbsp;
+                        <span style="color:#008c64">虚线</span>=终止线 &nbsp;
+                        <span style="color:#008cb4">蓝虚线</span>=顶/底裁切线 &nbsp;
+                        <span style="color:orange">橙色</span>=已调整 &nbsp;
+                        <span style="color:#cccc00">黄色</span>=拖拽中
+                    </p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                        <div style="flex:1; min-width:200px; text-align:center;">
+                            <div style="font-weight:bold; margin-bottom:4px;">🔴 字帖原稿</div>
+                            <canvas id="cutLinesCanvas1" style="max-width:100%; border:1px solid #ccc;"></canvas>
+                        </div>
+                        <div style="flex:1; min-width:200px; text-align:center;">
+                            <div style="font-weight:bold; margin-bottom:4px;">🟢 临摹作品</div>
+                            <canvas id="cutLinesCanvas2" style="max-width:100%; border:1px solid #ccc;"></canvas>
+                        </div>
+                    </div>
+                    <div style="text-align:center; margin-top:10px;">
+                        <button id="applyManualBtn" style="display:none;" onclick="applyManualAdjustments()">✅ 应用手动调整</button>
+                        <button id="resetCutsBtn" style="display:none;" onclick="resetCutLines()">↩️ 重置分割线</button>
+                        <button id="showCutDataBtn" style="display:none;" onclick="toggleCutData()">📋 查看调整数据</button>
+                        <button id="pickModeBtn" onclick="togglePickMode()">📌 手动选字模式</button>
+                    </div>
+                    <div id="pickModePanel" style="display:none; margin-top:10px;">
+                        <div class="pick-mode-header">
+                            <span>📌 双击字格 → 直接添加到下方对比列表</span>
+                            <span id="pickCounter" class="pick-counter">已选 0 字</span>
+                            <button id="pickUndoBtn" onclick="pickUndo()" disabled>↩️ 撤销</button>
+                            <button id="pickClearBtn" onclick="pickClear()">🗑️ 清空</button>
+                        </div>
+                    </div>
+                    <div id="cutDataOutput" style="display:none; margin-top:8px;">
+                        <textarea id="cutDataText" readonly style="width:100%; height:150px; font-family:monospace; font-size:12px; background:#f0f0f0; border:1px solid #ccc; border-radius:4px; padding:8px;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <h2 id="resultsTitle">对比结果</h2>
+            <p class="comparison-hint">🔴 红框 = 字帖原字 &nbsp; 🟢 绿框 = 临摹作品 &nbsp; （滚轮缩放）</p>
+            <div id="comparisonGrid" class="comparison-grid"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
